@@ -5,14 +5,9 @@ mod sort;
 mod to_llama;
 
 use super::{compile_patterns, Content, DataPromise};
-use ggus::{GGmlType, GGufMetaDataValueType, GGufMetaMapExt};
+use ggus::{GGmlType, GGufMetaDataValueType};
 use regex::Regex;
-use std::{
-    borrow::Cow,
-    collections::HashMap,
-    fmt::{self},
-    sync::LazyLock,
-};
+use std::{collections::HashMap, fmt};
 
 #[allow(unused)]
 pub(crate) enum Operator {
@@ -34,7 +29,7 @@ impl fmt::Display for Operator {
             &Self::Cast { .. } => write!(f, "cast"),
             &Self::MergeLinear(val) => {
                 if val {
-                    write!(f, "merge-linear",)
+                    write!(f, "merge-linear")
                 } else {
                     write!(f, "split-linear")
                 }
@@ -72,19 +67,4 @@ impl Content<'_> {
             SortTensors => self.sort_tensors(),
         }
     }
-
-    fn assert_llama(&self) {
-        match self.general_architecture().unwrap() {
-            "llama" => {}
-            arch => todo!("unsupported architecture: {arch}"),
-        }
-    }
-}
-
-static BLK_TENSOR_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^blk\.(\d+)\.(\w+)\.weight$").unwrap());
-
-#[inline]
-fn blk_tensor_name(i: impl fmt::Display, name: impl fmt::Display) -> Cow<'static, str> {
-    format!("blk.{i}.{name}.weight").into()
 }

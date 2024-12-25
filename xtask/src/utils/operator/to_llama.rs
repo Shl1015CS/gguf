@@ -1,13 +1,14 @@
 ﻿use super::{
     super::{DataPromise, MetaValue, Tensor},
-    Content, BLK_TENSOR_REGEX,
+    Content,
 };
 use ggus::{
     ggml_quants::{bf16, f16},
     DataFuture, GGmlType, GGufMetaMapExt,
 };
 use memmap2::MmapMut;
-use std::{alloc::Layout, ops::MulAssign};
+use regex::Regex;
+use std::{alloc::Layout, ops::MulAssign, sync::LazyLock};
 
 impl Content<'_> {
     pub(super) fn convert_to_llama(&mut self, extra: Option<String>) {
@@ -39,6 +40,8 @@ fn from_minicpm(content: &mut Content, extra: Option<String>) {
     let res_scale = res_scale.expect(ERR_MSG) / (nblk as f64).sqrt();
 
     for (name, tensor) in content.tensors.iter_mut() {
+        static BLK_TENSOR_REGEX: LazyLock<Regex> =
+            LazyLock::new(|| Regex::new(r"^blk\.(\d+)\.(\w+)\.weight$").unwrap());
         if name == "token_embd.weight" {
             scale_tensor(tensor, embd_scale);
         } else if let Some(captures) = BLK_TENSOR_REGEX.captures(name) {

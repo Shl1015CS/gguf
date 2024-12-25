@@ -1,134 +1,228 @@
-﻿use super::{super::Tensor, blk_tensor_name, Content, DataPromise, BLK_TENSOR_REGEX};
-use ggus::{DataFuture, GGufMetaMapExt};
+﻿use super::{super::Tensor, Content, DataPromise};
+use ggus::DataFuture;
 use memmap2::MmapMut;
-use std::borrow::Cow;
+use regex::Regex;
+use std::{borrow::Cow, collections::HashMap, hash::Hash, sync::LazyLock};
+
+const MERGE: &str =
+    r"(attn\.q|attn_q|attn\.k|attn_k|attn\.v|attn_v|ffn_gate|ffn_up)\.(weight|bias)$";
+const SPLIT: &str = r"(attn_qkv|ffn_gate_up)\.(weight|bias)$";
+const ATTN_QKV: &str = "attn_qkv";
+const ATTN_Q: &str = "attn_q";
+const ATTN_K: &str = "attn_k";
+const ATTN_V: &str = "attn_v";
+const FFN_GATE_UP: &str = "ffn_gate_up";
+const FFN_GATE: &str = "ffn_gate";
+const FFN_UP: &str = "ffn_up";
 
 impl Content<'_> {
-    pub(super) fn is_linear_merged(&self) -> bool {
-        self.tensors.contains_key("blk.0.attn_qkv.weight")
-    }
-
     pub(super) fn merge_linear(&mut self, ty: bool) {
-        if self.is_linear_merged() == ty {
-            return;
-        }
-
-        self.assert_llama();
         let tensors = std::mem::take(&mut self.tensors);
         if ty {
-            let blk = self.llm_block_count().expect("missing block count") as _;
-
-            let mut qkv = MergeCollector::<NUM_QKV>::new(blk);
-            let mut gate_up = MergeCollector::<NUM_GATE_UP>::new(blk);
-
+            let mut collector = MergeCollector::new();
             for (name, tensor) in tensors {
-                let Some(captures) = BLK_TENSOR_REGEX.captures(&name) else {
-                    self.tensors.insert(name, tensor);
-                    continue;
-                };
-                let i = &captures[1];
-                if let Some((name, tensor)) = match &captures[2] {
-                    NAME_Q => qkv.put(tensor, i, 0),
-                    NAME_K => qkv.put(tensor, i, 1),
-                    NAME_V => qkv.put(tensor, i, 2),
-                    NAME_GATE => gate_up.put(tensor, i, 0),
-                    NAME_UP => gate_up.put(tensor, i, 1),
-                    _ => Some((name, tensor)),
-                } {
-                    self.tensors.insert(name, tensor);
-                }
-            }
-        } else {
-            for (name, tensor) in tensors {
-                let Some(captures) = BLK_TENSOR_REGEX.captures(&name) else {
-                    self.tensors.insert(name, tensor);
-                    continue;
-                };
-                let i = &captures[1];
-                match &captures[2] {
-                    NAME_QKV => {
-                        let [q, k, v] = split_qkv(tensor);
-                        self.tensors.insert(blk_tensor_name(i, NAME_Q), q);
-                        self.tensors.insert(blk_tensor_name(i, NAME_K), k);
-                        self.tensors.insert(blk_tensor_name(i, NAME_V), v);
+                match collector.collect(&name, tensor) {
+                    Collecting::Collected => {}
+                    Collecting::Done((name, tensor)) => {
+                        self.tensors.insert(name, tensor);
                     }
-                    NAME_GATE_UP => {
-                        let [gate, up] = split_gate_up(tensor);
-                        self.tensors.insert(blk_tensor_name(i, NAME_GATE), gate);
-                        self.tensors.insert(blk_tensor_name(i, NAME_UP), up);
-                    }
-                    _ => {
+                    Collecting::Irrelevant(tensor) => {
                         self.tensors.insert(name, tensor);
                     }
                 }
             }
-        }
-    }
-}
-
-const NUM_QKV: usize = 3;
-const NUM_GATE_UP: usize = 2;
-const NAME_QKV: &str = "attn_qkv";
-const NAME_Q: &str = "attn_q";
-const NAME_K: &str = "attn_k";
-const NAME_V: &str = "attn_v";
-const NAME_GATE_UP: &str = "ffn_gate_up";
-const NAME_GATE: &str = "ffn_gate";
-const NAME_UP: &str = "ffn_up";
-
-struct MergeCollector<'a, const N: usize> {
-    buf: Vec<[Option<Tensor<'a>>; N]>,
-}
-
-impl<'a, const N: usize> MergeCollector<'a, N> {
-    fn new(blk: usize) -> Self {
-        Self {
-            buf: (0..blk).map(|_| std::array::from_fn(|_| None)).collect(),
-        }
-    }
-
-    fn collect(&mut self, i: &str, tensor: Tensor<'a>, k: usize) -> Option<[Tensor<'a>; N]> {
-        let i: usize = i.parse().unwrap();
-        self.buf[i][k] = Some(tensor);
-        if self.buf[i].iter().all(Option::is_some) {
-            Some(std::array::from_fn(|k| self.buf[i][k].take().unwrap()))
+            for (name, tensor) in collector.into_iter() {
+                self.tensors.insert(name, tensor);
+            }
         } else {
-            None
+            for (name, tensor) in tensors {
+                static SPLIT_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(SPLIT).unwrap());
+                if let Some(captures) = SPLIT_REGEX.captures(&name) {
+                    let pre = &name[..captures.get(0).unwrap().start()];
+                    let (_, [name, wb]) = captures.extract();
+                    match name {
+                        ATTN_QKV => {
+                            let [q, k, v] = split_qkv(tensor);
+                            self.tensors.insert(format!("{pre}{ATTN_Q}.{wb}").into(), q);
+                            self.tensors.insert(format!("{pre}{ATTN_K}.{wb}").into(), k);
+                            self.tensors.insert(format!("{pre}{ATTN_V}.{wb}").into(), v);
+                        }
+                        FFN_GATE_UP => {
+                            let [gate, up] = split_gate_up(tensor);
+                            self.tensors
+                                .insert(format!("{pre}{FFN_GATE}.{wb}").into(), gate);
+                            self.tensors
+                                .insert(format!("{pre}{FFN_UP}.{wb}").into(), up);
+                        }
+                        _ => unreachable!(),
+                    }
+                } else {
+                    self.tensors.insert(name, tensor);
+                }
+            }
         }
     }
 }
 
-impl<'a> MergeCollector<'a, NUM_QKV> {
-    fn put(&mut self, tensor: Tensor<'a>, i: &str, k: usize) -> Option<(Cow<'a, str>, Tensor<'a>)> {
-        self.collect(i, tensor, k).map(|[q, k, v]| {
-            let qr = q.shape[1];
-            let kr = k.shape[1];
-            let vr = v.shape[1];
-            assert_eq!(qr % kr, 0);
-            assert!(qr >= kr);
-            assert_eq!(kr, vr);
-            (blk_tensor_name(i, NAME_QKV), concat1([q, k, v]))
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[repr(u8)]
+enum Layer {
+    Attn,
+    Ffn,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[repr(u8)]
+enum WB {
+    Weight,
+    Bias,
+}
+
+enum Collecting<'a> {
+    Collected,
+    Done((Cow<'a, str>, Tensor<'a>)),
+    Irrelevant(Tensor<'a>),
+}
+
+struct MergeCollector<'a>(HashMap<String, GroupCollector<'a>>);
+struct GroupCollector<'a>(HashMap<(Layer, WB), [Option<Tensor<'a>>; 3]>);
+
+impl<'a> MergeCollector<'a> {
+    fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    fn collect(&mut self, name: &str, tensor: Tensor<'a>) -> Collecting<'a> {
+        static MERGE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(MERGE).unwrap());
+        let Some(captures) = MERGE_REGEX.captures(name) else {
+            return Collecting::Irrelevant(tensor);
+        };
+        let pre = &name[..captures.get(0).unwrap().start()];
+        let (_, [name, wb]) = captures.extract();
+        match self.0.get_mut(pre) {
+            Some(group) => group
+                .put(name, wb, tensor)
+                .map_or(Collecting::Collected, |(name, tensor)| {
+                    Collecting::Done((format!("{pre}{name}.{wb}").into(), tensor))
+                }),
+            None => {
+                let mut group = GroupCollector(HashMap::new());
+                assert!(group.put(name, wb, tensor).is_none());
+                self.0.insert(pre.into(), group);
+                Collecting::Collected
+            }
+        }
+    }
+
+    fn into_iter(self) -> impl IntoIterator<Item = (Cow<'a, str>, Tensor<'a>)> {
+        self.0.into_iter().flat_map(|(pre, group)| {
+            group.0.into_iter().flat_map(move |((layer, wb), tensors)| {
+                let wb = match wb {
+                    WB::Weight => "weight",
+                    WB::Bias => "bias",
+                };
+                let pre = pre.clone();
+                tensors
+                    .into_iter()
+                    .enumerate()
+                    .filter_map(move |(i, tensor)| {
+                        tensor.map(|tensor| {
+                            let name = match (layer, i) {
+                                (Layer::Attn, 0) => ATTN_Q,
+                                (Layer::Attn, 1) => ATTN_K,
+                                (Layer::Attn, 2) => ATTN_V,
+                                (Layer::Ffn, 0) => FFN_GATE,
+                                (Layer::Ffn, 1) => FFN_UP,
+                                _ => unreachable!(),
+                            };
+                            (format!("{pre}{name}.{wb}").into(), tensor)
+                        })
+                    })
+            })
         })
     }
 }
 
-impl<'a> MergeCollector<'a, NUM_GATE_UP> {
-    fn put(&mut self, tensor: Tensor<'a>, i: &str, k: usize) -> Option<(Cow<'a, str>, Tensor<'a>)> {
-        self.collect(i, tensor, k).map(|[gate, up]| {
-            assert_eq!(gate.shape[1], up.shape[1]);
-            (blk_tensor_name(i, NAME_GATE_UP), concat1([gate, up]))
-        })
+impl<'a> GroupCollector<'a> {
+    fn put(
+        &mut self,
+        name: &str,
+        wb: &str,
+        tensor: Tensor<'a>,
+    ) -> Option<(&'static str, Tensor<'a>)> {
+        let (layer, i) = match name {
+            ATTN_Q | "attn.q" => (Layer::Attn, 0),
+            ATTN_K | "attn.k" => (Layer::Attn, 1),
+            ATTN_V | "attn.v" => (Layer::Attn, 2),
+            FFN_GATE => (Layer::Ffn, 0),
+            FFN_UP => (Layer::Ffn, 1),
+            _ => unreachable!(),
+        };
+        let wb = match wb {
+            "weight" => WB::Weight,
+            "bias" => WB::Bias,
+            _ => unreachable!(),
+        };
+        use std::collections::hash_map::Entry::{Occupied, Vacant};
+        match self.0.entry((layer, wb)) {
+            Occupied(mut entry) => {
+                entry.get_mut()[i] = Some(tensor);
+                match entry.key().0 {
+                    Layer::Attn => {
+                        if let [Some(_), Some(_), Some(_)] = entry.get() {
+                            Some(merge_qkv(entry.remove()))
+                        } else {
+                            None
+                        }
+                    }
+                    Layer::Ffn => {
+                        if let [Some(_), Some(_), None] = entry.get() {
+                            Some(merge_gate_up(entry.remove()))
+                        } else {
+                            None
+                        }
+                    }
+                }
+            }
+            Vacant(entry) => {
+                let mut array = [None, None, None];
+                array[i] = Some(tensor);
+                entry.insert(array);
+                None
+            }
+        }
     }
 }
 
-fn split_qkv(tensor: Tensor) -> [Tensor; NUM_QKV] {
+fn merge_qkv(tensors: [Option<Tensor>; 3]) -> (&'static str, Tensor) {
+    let [Some(q), Some(k), Some(v)] = tensors else {
+        unreachable!()
+    };
+    let qr = q.shape.get(1).copied().unwrap_or(1);
+    let kr = k.shape.get(1).copied().unwrap_or(1);
+    let vr = v.shape.get(1).copied().unwrap_or(1);
+    assert_eq!(qr % kr, 0);
+    assert!(qr >= kr);
+    assert_eq!(kr, vr);
+    (ATTN_QKV, concat1([q, k, v]))
+}
+
+fn merge_gate_up(tensors: [Option<Tensor>; 3]) -> (&'static str, Tensor) {
+    let [Some(gate), Some(up), None] = tensors else {
+        unreachable!()
+    };
+    assert_eq!(gate.shape[1], up.shape[1]);
+    (FFN_GATE_UP, concat1([gate, up]))
+}
+
+fn split_qkv(tensor: Tensor) -> [Tensor; 3] {
     let [c, r, _] = distruct(&tensor);
     let rq = c;
     let rkv = (r - c) / 2;
     split1(tensor, [rq, rkv, rkv])
 }
 
-fn split_gate_up(tensor: Tensor) -> [Tensor; NUM_GATE_UP] {
+fn split_gate_up(tensor: Tensor) -> [Tensor; 2] {
     let r = tensor.shape[1] / 2;
     split1(tensor, [r, r])
 }
@@ -136,6 +230,7 @@ fn split_gate_up(tensor: Tensor) -> [Tensor; NUM_GATE_UP] {
 /// 解构形状，补充分布维度
 fn distruct(t: &Tensor) -> [u64; 3] {
     match *t.shape {
+        [c] => [c, 1, 1],
         [c, r] => [c, r, 1],
         [c, r, n] => [c, r, n],
         [..] => panic!("invalid tensor shape: {:?}", t.shape),

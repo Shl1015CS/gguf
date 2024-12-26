@@ -4,4 +4,4 @@ resolver = "2"
 
 [workspace.dependencies]
 indexmap = "2.7"
-rayon = "1.10"
+log = "0.4"

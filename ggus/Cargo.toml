@@ -14,6 +14,7 @@ categories = ["parsing", "parser-implementations", "encoding"]
 [dependencies]
 ggml-quants = { version = "0.0", path = "../ggml-quants" }
 indexmap.workspace = true
+log.workspace = true
 fancy-regex = "0.14"
 num_enum = "0.7"
 

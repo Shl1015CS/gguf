@@ -1,19 +1,22 @@
 ﻿use super::{super::Tensor, Content, DataPromise};
-use ggus::DataFuture;
+use ggus::{DataFuture, GGmlType, GGmlTypeSize};
+use mem_rearrange::{ndarray_layout::ArrayLayout, Rearranging};
 use memmap2::MmapMut;
 use regex::Regex;
-use std::{borrow::Cow, collections::HashMap, hash::Hash, sync::LazyLock};
+use std::{borrow::Cow, collections::HashMap, hash::Hash, iter::zip, sync::LazyLock};
 
-const MERGE: &str =
-    r"(attn\.q|attn_q|attn\.k|attn_k|attn\.v|attn_v|ffn_gate|ffn_up)\.(weight|bias)$";
+const MERGE: &str = r"(attn\.q|attn_q|attn\.k|attn_k|attn\.v|attn_v|ffn_gate|ffn_up|ffn_gate_exps|ffn_up_exps)\.(weight|bias)$";
 const SPLIT: &str = r"(attn_qkv|ffn_gate_up)\.(weight|bias)$";
 const ATTN_QKV: &str = "attn_qkv";
 const ATTN_Q: &str = "attn_q";
 const ATTN_K: &str = "attn_k";
 const ATTN_V: &str = "attn_v";
 const FFN_GATE_UP: &str = "ffn_gate_up";
+const FFN_GATE_UP_EXPS: &str = "ffn_gate_up_exps";
 const FFN_GATE: &str = "ffn_gate";
+const FFN_GATE_EXPS: &str = "ffn_gate_exps";
 const FFN_UP: &str = "ffn_up";
+const FFN_UP_EXPS: &str = "ffn_up_exps";
 
 impl Content<'_> {
     pub(super) fn merge_linear(&mut self, ty: bool) {
@@ -40,19 +43,23 @@ impl Content<'_> {
                 if let Some(captures) = SPLIT_REGEX.captures(&name) {
                     let pre = &name[..captures.get(0).unwrap().start()];
                     let (_, [name, wb]) = captures.extract();
+                    let key = |name: &str| format!("{pre}{name}.{wb}").into();
                     match name {
                         ATTN_QKV => {
                             let [q, k, v] = split_qkv(tensor);
-                            self.tensors.insert(format!("{pre}{ATTN_Q}.{wb}").into(), q);
-                            self.tensors.insert(format!("{pre}{ATTN_K}.{wb}").into(), k);
-                            self.tensors.insert(format!("{pre}{ATTN_V}.{wb}").into(), v);
+                            self.tensors.insert(key(ATTN_Q), q);
+                            self.tensors.insert(key(ATTN_K), k);
+                            self.tensors.insert(key(ATTN_V), v);
                         }
                         FFN_GATE_UP => {
                             let [gate, up] = split_gate_up(tensor);
-                            self.tensors
-                                .insert(format!("{pre}{FFN_GATE}.{wb}").into(), gate);
-                            self.tensors
-                                .insert(format!("{pre}{FFN_UP}.{wb}").into(), up);
+                            self.tensors.insert(key(FFN_GATE), gate);
+                            self.tensors.insert(key(FFN_UP), up);
+                        }
+                        FFN_GATE_UP_EXPS => {
+                            let [gate, up] = split_gate_up_exps(tensor);
+                            self.tensors.insert(key(FFN_GATE_EXPS), gate);
+                            self.tensors.insert(key(FFN_UP_EXPS), up);
                         }
                         _ => unreachable!(),
                     }
@@ -69,6 +76,7 @@ impl Content<'_> {
 enum Layer {
     Attn,
     Ffn,
+    FfnMoe,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -133,6 +141,8 @@ impl<'a> MergeCollector<'a> {
                                 (Layer::Attn, 2) => ATTN_V,
                                 (Layer::Ffn, 0) => FFN_GATE,
                                 (Layer::Ffn, 1) => FFN_UP,
+                                (Layer::FfnMoe, 0) => FFN_GATE_EXPS,
+                                (Layer::FfnMoe, 1) => FFN_UP_EXPS,
                                 _ => unreachable!(),
                             };
                             (format!("{pre}{name}.{wb}").into(), tensor)
@@ -156,6 +166,8 @@ impl<'a> GroupCollector<'a> {
             ATTN_V | "attn.v" => (Layer::Attn, 2),
             FFN_GATE => (Layer::Ffn, 0),
             FFN_UP => (Layer::Ffn, 1),
+            FFN_GATE_EXPS => (Layer::FfnMoe, 0),
+            FFN_UP_EXPS => (Layer::FfnMoe, 1),
             _ => unreachable!(),
         };
         let wb = match wb {
@@ -182,6 +194,13 @@ impl<'a> GroupCollector<'a> {
                             None
                         }
                     }
+                    Layer::FfnMoe => {
+                        if let [Some(_), Some(_), None] = entry.get() {
+                            Some(merge_gate_up_exps(entry.remove()))
+                        } else {
+                            None
+                        }
+                    }
                 }
             }
             Vacant(entry) => {
@@ -198,13 +217,13 @@ fn merge_qkv(tensors: [Option<Tensor>; 3]) -> (&'static str, Tensor) {
     let [Some(q), Some(k), Some(v)] = tensors else {
         unreachable!()
     };
-    let qr = q.shape.get(1).copied().unwrap_or(1);
-    let kr = k.shape.get(1).copied().unwrap_or(1);
-    let vr = v.shape.get(1).copied().unwrap_or(1);
+    let [_, qr, _] = distruct(&q);
+    let [_, kr, _] = distruct(&k);
+    let [_, vr, _] = distruct(&v);
     assert_eq!(qr % kr, 0);
     assert!(qr >= kr);
     assert_eq!(kr, vr);
-    (ATTN_QKV, concat1([q, k, v]))
+    (ATTN_QKV, concat(1, [q, k, v]))
 }
 
 fn merge_gate_up(tensors: [Option<Tensor>; 3]) -> (&'static str, Tensor) {
@@ -212,22 +231,34 @@ fn merge_gate_up(tensors: [Option<Tensor>; 3]) -> (&'static str, Tensor) {
         unreachable!()
     };
     assert_eq!(gate.shape[1], up.shape[1]);
-    (FFN_GATE_UP, concat1([gate, up]))
+    (FFN_GATE_UP, concat(1, [gate, up]))
+}
+
+fn merge_gate_up_exps(tensors: [Option<Tensor>; 3]) -> (&'static str, Tensor) {
+    let [Some(gate), Some(up), None] = tensors else {
+        unreachable!()
+    };
+    (FFN_GATE_UP_EXPS, concat(1, [gate, up]))
 }
 
 fn split_qkv(tensor: Tensor) -> [Tensor; 3] {
     let [c, r, _] = distruct(&tensor);
     let rq = c;
     let rkv = (r - c) / 2;
-    split1(tensor, [rq, rkv, rkv])
+    split(1, tensor, [rq, rkv, rkv])
 }
 
 fn split_gate_up(tensor: Tensor) -> [Tensor; 2] {
     let r = tensor.shape[1] / 2;
-    split1(tensor, [r, r])
+    split(1, tensor, [r, r])
 }
 
-/// 解构形状，补充分布维度
+fn split_gate_up_exps(tensor: Tensor) -> [Tensor; 2] {
+    let r = tensor.shape[1] / 2;
+    split(1, tensor, [r, r])
+}
+
+/// 解构形状，补充维度
 fn distruct(t: &Tensor) -> [u64; 3] {
     match *t.shape {
         [c] => [c, 1, 1],
@@ -237,93 +268,87 @@ fn distruct(t: &Tensor) -> [u64; 3] {
     }
 }
 
-/// 构造形状，去除分布维度
-fn construct(c: u64, r: u64, n: u64) -> Vec<u64> {
-    if n == 1 {
-        vec![c, r]
-    } else {
-        vec![c, r, n]
-    }
-}
-
-/// 在最高维分割数据
-macro_rules! split0 {
-    ($s:expr; $d:expr; [$i: expr]) => {
-        $s[$d * $i..][..$d]
-    };
-}
-
-fn concat1<const N: usize>(tensors: [Tensor; N]) -> Tensor {
-    // 提取数据类型和形状
+fn concat<const N: usize>(axis: usize, tensors: [Tensor; N]) -> Tensor {
     let ty = tensors[0].ty;
-    let [c, mut r, n] = distruct(&tensors[0]);
+    let mut shape = tensors[0].shape.clone();
+
     for t in &tensors[1..] {
-        let [c_, r_, n_] = distruct(t);
-        assert_eq!(c, c_);
-        assert_eq!(n, n_);
-        r += r_;
-    }
-    // 锁定形状和数据
-    let r = r;
-    let data = tensors.map(|t| t.data);
-    // 生成张量
-    Tensor {
-        ty,
-        shape: construct(c, r, n),
-        data: DataPromise::lazy(move || {
-            let data: [_; N] = std::array::from_fn(|i| data[i].get());
-
-            let len = data.iter().map(|s| s.len()).sum();
-            assert_eq!(len, ty.size().elements_to_bytes(&[c, r, n]));
-
-            let n = n as _;
-            let mut ans = MmapMut::map_anon(len).unwrap();
-            for i in 0..n {
-                let mut dst = &mut split0!(ans; len / n; [i]);
-                for data in data {
-                    let data = &split0!(data; data.len() / n; [i]);
-                    let (dst_, tail) = dst.split_at_mut(data.len());
-                    dst_.copy_from_slice(data);
-                    dst = tail;
-                }
-                assert!(dst.is_empty());
+        assert_eq!(t.ty, ty);
+        assert_eq!(t.shape.len(), shape.len());
+        for (i, (out, &d)) in zip(&mut shape, &t.shape).enumerate() {
+            if i == axis {
+                *out += d
+            } else {
+                assert_eq!(*out, d)
             }
-            ans
-        }),
+        }
     }
+
+    let shape_ = shape.clone();
+    let data = DataPromise::lazy(move || {
+        let GGmlTypeSize {
+            block_size,
+            type_size,
+        } = ty.size();
+        let group = block_size as usize;
+        let unit = type_size as usize;
+
+        let parts = tensors
+            .iter()
+            .map(|t| {
+                let d = t.shape[axis] as usize;
+                if axis == 0 {
+                    d / group
+                } else {
+                    d
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let mut ans = MmapMut::map_anon(ty.size().elements_to_bytes(&shape_)).unwrap();
+        for (t, out_layout) in zip(tensors, layout(ty, &shape_).split(axis, &parts)) {
+            let rearranging = Rearranging::new(&out_layout, &layout(ty, &t.shape), unit).unwrap();
+            unsafe { rearranging.launch(ans.as_mut_ptr(), t.data.get().as_ptr()) }
+        }
+        ans
+    });
+
+    Tensor { ty, shape, data }
 }
 
-fn split1<const N: usize>(tensor: Tensor, split: [u64; N]) -> [Tensor; N] {
-    // 提取数据类型和形状
-    let ty = tensor.ty;
-    let [c, r, n] = distruct(&tensor);
-    assert_eq!(r, split.iter().sum());
-    // 计算规模
-    let size = ty.size();
-    let d = size.elements_to_bytes(&[c, r]);
-    // 生成张量
-    let mut presum = 0;
-    split.map(|r_| {
-        let d_ = size.elements_to_bytes(&[c, r_]);
-        let data = tensor.data.clone();
-        let presum_ = presum;
-        presum += d_;
-        Tensor {
-            ty,
-            shape: construct(c, r_, n),
-            data: DataPromise::lazy(move || {
-                let n = n as _;
-                let data = data.get();
-                assert_eq!(data.len(), d * n);
+fn split<const N: usize>(axis: usize, tensor: Tensor, split: [u64; N]) -> [Tensor; N] {
+    let Tensor { ty, shape, data } = tensor;
+    assert_eq!(shape[axis], split.iter().sum());
 
-                let mut ans = MmapMut::map_anon(d_ * n).unwrap();
-                for i in 0..n {
-                    let src = &split0!(data; d; [i]);
-                    let dst = &mut split0!(ans; d_; [i]);
-                    dst.copy_from_slice(&src[presum_..][..d_]);
-                }
-                ans
-            }),
-        }
+    let data_layout = layout(ty, &shape);
+    let block_size = ty.size().block_size as u64;
+    let parts = split.map(|d| if axis == 0 { d / block_size } else { d } as usize);
+    let mut data_layout = data_layout.split(axis, &parts);
+
+    split.map(move |d| {
+        let mut shape = shape.clone();
+        shape[axis] = d;
+
+        let len = ty.size().elements_to_bytes(&shape);
+        let unit = ty.size().type_size;
+
+        let dst = layout(ty, &shape);
+        let src = data_layout.next().unwrap();
+        let rearranging = Rearranging::new(&dst, &src, unit as _).unwrap();
+
+        let data = data.clone();
+        let data = DataPromise::lazy(move || {
+            let mut ans = MmapMut::map_anon(len).unwrap();
+            unsafe { rearranging.launch(ans.as_mut_ptr(), data.get().as_ptr()) }
+            ans
+        });
+        Tensor { ty, shape, data }
     })
+}
+
+fn layout(ty: GGmlType, shape: &[u64]) -> ArrayLayout<4> {
+    use mem_rearrange::ndarray_layout::Endian::LittleEndian;
+    let mut shape = shape.iter().map(|&d| d as _).collect::<Vec<_>>();
+    shape[0] /= ty.size().block_size as usize;
+    ArrayLayout::new_contiguous(&shape, LittleEndian, ty.size().type_size as _)
 }

@@ -16,8 +16,8 @@ default = ["types"]
 types = ["digit-layout"]
 
 [dependencies]
-rayon.workspace = true
 digit-layout = { version = "0.2", optional = true }
+rayon = "1.10"
 half = "2.4"
 
 [dev-dependencies]

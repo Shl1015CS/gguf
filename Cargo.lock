@@ -245,8 +245,8 @@ dependencies = [
  "indexmap",
  "itertools",
  "log",
+ "mem-rearrange",
  "memmap2",
- "rayon",
  "regex",
  "simple_logger",
  "time",
@@ -259,6 +259,7 @@ dependencies = [
  "fancy-regex",
  "ggml-quants",
  "indexmap",
+ "log",
  "num_enum",
 ]
 
@@ -334,6 +335,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 
 [[package]]
+name = "mem-rearrange"
+version = "0.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd3e106cdc7e6caa6319d11345ea6938905f63b192d6ba1274b46f1f96e16ca5"
+dependencies = [
+ "itertools",
+ "ndarray-layout",
+ "rayon",
+]
+
+[[package]]
 name = "memchr"
 version = "2.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -347,6 +359,12 @@ checksum = "fd3f7eed9d3848f8b98834af67102b720745c4ec028fcd0aa0239277e7de374f"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "ndarray-layout"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d1677b74ab72b7473ad1e7ae82b60d0054df403c46c99d9a4bf9d0f10dbaef1"
 
 [[package]]
 name = "num-conv"
@@ -419,9 +437,9 @@ dependencies = [
 
 [[package]]
 name = "quote"
-version = "1.0.37"
+version = "1.0.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5b9d34b8991d19d98081b46eacdd8eb58c6f2b201139f7c5f643cc155a633af"
+checksum = "0e4dccaaaf89514f546c693ddc140f729f958c247918a13380cccc6078391acc"
 dependencies = [
  "proc-macro2",
 ]

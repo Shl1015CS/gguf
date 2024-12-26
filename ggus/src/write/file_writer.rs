@@ -1,8 +1,10 @@
 ﻿use super::GGufWriter;
 use crate::{pad, GGmlType, GGufFileHeader, GGufMetaDataValueType, DEFAULT_ALIGNMENT};
+use log::trace;
 use std::{
     borrow::Borrow,
     io::{Result, Write},
+    time::Instant,
 };
 
 pub struct GGufFileWriter<T: Write> {
@@ -102,9 +104,21 @@ impl<T: Write, U: DataFuture> GGufTensorWriter<T, U> {
             ..
         } = self;
 
-        for data in data {
+        let total = data.len().to_string();
+        let width = total.len();
+        for (i, data) in data.into_iter().enumerate() {
+            let t0 = Instant::now();
+            let data = data.get();
+            let t1 = Instant::now();
             writer.write_padding(alignment)?;
-            writer.write_data(data.get())?;
+            writer.write_data(data)?;
+            let t2 = Instant::now();
+            trace!(
+                "data {i:>width$}/{total} size = {} bytes, calculate in {:?}, write in {:?}",
+                data.len(),
+                t1 - t0,
+                t2 - t1,
+            )
         }
         Ok(writer.written_bytes())
     }

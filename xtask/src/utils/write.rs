@@ -15,6 +15,7 @@ impl Content<'_> {
             shard_max_tensor_count,
             shard_max_file_size,
             shard_no_tensor_first,
+            write_data,
         } = out;
 
         // 规划分片方案
@@ -79,7 +80,7 @@ impl Content<'_> {
                             }
                         }
 
-                        let mut writer = writer.finish();
+                        let mut writer = writer.finish(write_data);
                         for (name, tensor) in tensors {
                             writer.write_tensor(&name, tensor.ty, &tensor.shape, tensor.data)?;
                         }

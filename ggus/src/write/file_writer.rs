@@ -15,6 +15,7 @@ pub struct GGufTensorWriter<T: Write, U> {
     alignment: usize,
     data: Vec<U>,
     offset: usize,
+    write_data: bool,
 }
 
 pub trait DataFuture {
@@ -67,12 +68,13 @@ impl<T: Write> GGufFileWriter<T> {
     }
 
     #[inline]
-    pub fn finish<U>(self) -> GGufTensorWriter<T, U> {
+    pub fn finish<U>(self, write_data: bool) -> GGufTensorWriter<T, U> {
         GGufTensorWriter {
             writer: self.writer,
             alignment: self.alignment,
             data: Vec::new(),
             offset: 0,
+            write_data,
         }
     }
 }
@@ -86,8 +88,9 @@ impl<T: Write, U: DataFuture> GGufTensorWriter<T, U> {
 
         let len = ty.size().elements_to_bytes(shape);
         self.offset += len;
-        self.data.push(data);
-
+        if self.write_data {
+            self.data.push(data)
+        }
         Ok(())
     }
 

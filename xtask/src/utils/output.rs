@@ -17,8 +17,11 @@ pub(crate) struct OutputArgs {
     #[clap(long, short = 's')]
     max_bytes: Option<String>,
     /// If set, the first shard will not contain any tensor
-    #[clap(long, short)]
+    #[clap(long)]
     no_tensor_first: bool,
+    /// If set, tensor data will not be written to output files
+    #[clap(long)]
+    no_data: bool,
 }
 
 pub(crate) struct OutputConfig {
@@ -26,17 +29,26 @@ pub(crate) struct OutputConfig {
     pub shard_max_tensor_count: usize,
     pub shard_max_file_size: MemSize,
     pub shard_no_tensor_first: bool,
+    pub write_data: bool,
 }
 
 impl From<OutputArgs> for OutputConfig {
     fn from(args: OutputArgs) -> Self {
+        let OutputArgs {
+            output_dir,
+            max_tensors,
+            max_bytes,
+            no_tensor_first,
+            no_data,
+        } = args;
         Self {
-            dir: args.output_dir,
-            shard_max_tensor_count: args.max_tensors.unwrap_or(usize::MAX),
-            shard_max_file_size: args.max_bytes.map_or(Default::default(), |s| {
+            dir: output_dir,
+            shard_max_tensor_count: max_tensors.unwrap_or(usize::MAX),
+            shard_max_file_size: max_bytes.map_or(Default::default(), |s| {
                 s.parse().expect("Invalid max bytes size")
             }),
-            shard_no_tensor_first: args.no_tensor_first,
+            shard_no_tensor_first: no_tensor_first,
+            write_data: !no_data,
         }
     }
 }

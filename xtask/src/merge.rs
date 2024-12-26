@@ -12,6 +12,9 @@ pub struct MergeArgs {
     /// Output directory for merged file
     #[clap(long, short)]
     output_dir: Option<PathBuf>,
+    /// If set, tensor data will not be written to output files
+    #[clap(long)]
+    no_data: bool,
 
     #[clap(flatten)]
     log: LogArgs,
@@ -22,6 +25,7 @@ impl MergeArgs {
         let Self {
             file,
             output_dir,
+            no_data,
             log,
         } = self;
         log.init();
@@ -42,6 +46,7 @@ impl MergeArgs {
                 shard_max_tensor_count: usize::MAX,
                 shard_max_file_size: Default::default(),
                 shard_no_tensor_first: false,
+                write_data: !no_data,
             },
         )
         .unwrap();

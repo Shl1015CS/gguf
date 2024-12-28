@@ -29,6 +29,9 @@ jobs:
       - name: Check format
         run: cargo fmt --check
 
+      - name: Update deps
+        run: cargo update
+
       - name: Run test
         run: cargo test
 

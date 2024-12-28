@@ -10,7 +10,7 @@ use std::path::PathBuf;
 pub struct CastArgs {
     /// File to convert
     file: PathBuf,
-    #[clap(long, short)]
+    #[clap(long, short = 'x')]
     types: String,
 
     #[clap(flatten)]

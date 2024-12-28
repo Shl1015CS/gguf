@@ -1,12 +1,14 @@
 ﻿# gguf
 
 [![CI](https://github.com/InfiniTensor/gguf/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/InfiniTensor/gguf/actions)
+[![Latest version](https://img.shields.io/crates/v/ggus.svg)](https://crates.io/crates/gguf-utils)
+[![Documentation](https://docs.rs/ggus/badge.svg)](https://docs.rs/gguf-utils)
 [![license](https://img.shields.io/github/license/InfiniTensor/gguf)](https://mit-license.org/)
-![GitHub repo size](https://img.shields.io/github/repo-size/InfiniTensor/gguf)
-![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/InfiniTensor/gguf)
 
 [![GitHub Issues](https://img.shields.io/github/issues/InfiniTensor/gguf)](https://github.com/InfiniTensor/gguf/issues)
 [![GitHub Pull Requests](https://img.shields.io/github/issues-pr/InfiniTensor/gguf)](https://github.com/InfiniTensor/gguf/pulls)
+![GitHub repo size](https://img.shields.io/github/repo-size/InfiniTensor/gguf)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/InfiniTensor/gguf)
 ![GitHub contributors](https://img.shields.io/github/contributors/InfiniTensor/gguf)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/InfiniTensor/gguf)
 
@@ -16,21 +18,29 @@
 
 ### 帮助信息
 
-```plaintext
+```shell
+gguf-utils --help
+```
+
+或
+
+```shell
+# in project dir
 cargo xtask --help
 ```
 
 ```plaintext
 gguf-utils is a command-line tool for working with gguf files
 
-Usage: xtask.exe <COMMAND>
+Usage: gguf-utils <COMMAND>
 
 Commands:
   show      Show the contents of gguf files
   split     Split gguf files into shards
   merge     Merge shards into a single gguf file
-  filter    Filter gguf files based on wildcard patterns
+  cast      Cast data types in gguf files
   convert   Convert gguf files to different format
+  to-llama  Convert gguf files to Llama format
   set-meta  Set metadata of gguf files
   help      Print this message or the help of the given subcommand(s)
 
@@ -41,14 +51,21 @@ Options:
 
 ### 阅读内容
 
-```plaintext
+```shell
+gguf-utils show --help
+```
+
+或
+
+```shell
+# in project dir
 cargo show --help
 ```
 
 ```plaintext
 Show the contents of gguf files
 
-Usage: xtask.exe show [OPTIONS] <FILE>
+Usage: gguf-utils show [OPTIONS] <FILE>
 
 Arguments:
   <FILE>  The file to show
@@ -64,105 +81,144 @@ Options:
 
 ### 分片
 
-```plaintext
+```shell
+gguf-utils split --help
+```
+
+或
+
+```shell
+# in project dir
 cargo split --help
 ```
 
 ```plaintext
 Split gguf files into shards
 
-Usage: xtask.exe split [OPTIONS] <FILE>
+Usage: gguf-utils split [OPTIONS] <FILE>
 
 Arguments:
   <FILE>  File to split
 
 Options:
-  -o, --output-dir <OUTPUT_DIR>    Output directory for splited shards
+  -o, --output-dir <OUTPUT_DIR>    Output directory for converted files
   -t, --max-tensors <MAX_TENSORS>  Max count of tensors per shard
   -s, --max-bytes <MAX_BYTES>      Max size in bytes per shard
-  -n, --no-tensor-first            If set, the first shard will not contain any tensor
+      --no-tensor-first            If set, the first shard will not contain any tensor
+      --no-data                    If set, tensor data will not be written to output files
       --log <LOG>                  Log level, may be "off", "trace", "debug", "info" or "error"
   -h, --help                       Print help
 ```
 
 ### 合并
 
-```plaintext
+```shell
+gguf-utils merge --help
+```
+
+或
+
+```shell
+# in project dir
 cargo merge --help
 ```
 
 ```plaintext
 Merge shards into a single gguf file
 
-Usage: xtask.exe merge [OPTIONS] <FILE>
+Usage: gguf-utils merge [OPTIONS] <FILE>
 
 Arguments:
   <FILE>  One of the shards to merge
 
 Options:
   -o, --output-dir <OUTPUT_DIR>  Output directory for merged file
+      --no-data                  If set, tensor data will not be written to output files
       --log <LOG>                Log level, may be "off", "trace", "debug", "info" or "error"
   -h, --help                     Print help
 ```
 
 ### 转换数据类型
 
-```plaintext
+```shell
+gguf-utils cast --help
+```
+
+或
+
+```shell
+# in project dir
 cargo cast --help
 ```
 
 ```plaintext
 Cast data types in gguf files
 
-Usage: gguf-utils.exe cast [OPTIONS] --types <TYPES> <FILE>
+Usage: gguf-utils cast [OPTIONS] --types <TYPES> <FILE>
 
 Arguments:
   <FILE>  File to convert
 
 Options:
-  -t, --types <TYPES>
+  -x, --types <TYPES>
   -o, --output-dir <OUTPUT_DIR>    Output directory for converted files
   -t, --max-tensors <MAX_TENSORS>  Max count of tensors per shard
   -s, --max-bytes <MAX_BYTES>      Max size in bytes per shard
-  -n, --no-tensor-first            If set, the first shard will not contain any tensor
+      --no-tensor-first            If set, the first shard will not contain any tensor
+      --no-data                    If set, tensor data will not be written to output files
       --log <LOG>                  Log level, may be "off", "trace", "debug", "info" or "error"
   -h, --help                       Print help
 ```
 
 ### 转换格式
 
-```plaintext
+```shell
+gguf-utils convert --help
+```
+
+或
+
+```shell
+# in project dir
 cargo convert --help
 ```
 
 ```plaintext
 Convert gguf files to different format
 
-Usage: xtask.exe convert [OPTIONS] --steps <STEPS> <FILE>
+Usage: gguf-utils convert [OPTIONS] --steps <STEPS> <FILE>
 
 Arguments:
   <FILE>  File to convert
 
 Options:
+  -x, --steps <STEPS>              Steps to apply, separated by "->", maybe "sort", "merge-linear", "split-linear", "filter-meta:<key>" or "filter-tensor:<name>"
   -o, --output-dir <OUTPUT_DIR>    Output directory for converted files
-  -x, --steps <STEPS>              Steps to apply, separated by "->", maybe "sort", "merge-linear", "split-linear", "filter-meta:<key>", "filter-tensor:<name>" or "cast:<dtype>"
   -t, --max-tensors <MAX_TENSORS>  Max count of tensors per shard
   -s, --max-bytes <MAX_BYTES>      Max size in bytes per shard
-  -n, --no-tensor-first            If set, the first shard will not contain any tensor
+      --no-tensor-first            If set, the first shard will not contain any tensor
+      --no-data                    If set, tensor data will not be written to output files
       --log <LOG>                  Log level, may be "off", "trace", "debug", "info" or "error"
   -h, --help                       Print help
 ```
 
 ### 转换到标准 llama
 
-```plaintext
+```shell
+gguf-utils to-llama --help
+```
+
+或
+
+```shell
+# in project dir
 cargo to-llama --help
 ```
 
 ```plaintext
 Convert gguf files to Llama format
 
-Usage: xtask.exe to-llama [OPTIONS] <FILE>
+Usage: gguf-utils to-llama [OPTIONS] <FILE>
 
 Arguments:
   <FILE>  File to convert
@@ -172,30 +228,42 @@ Options:
   -o, --output-dir <OUTPUT_DIR>    Output directory for converted files
   -t, --max-tensors <MAX_TENSORS>  Max count of tensors per shard
   -s, --max-bytes <MAX_BYTES>      Max size in bytes per shard
-  -n, --no-tensor-first            If set, the first shard will not contain any tensor
+      --no-tensor-first            If set, the first shard will not contain any tensor
+      --no-data                    If set, tensor data will not be written to output files
       --log <LOG>                  Log level, may be "off", "trace", "debug", "info" or "error"
   -h, --help                       Print help
 ```
 
 ### 修改元信息
 
-```plaintext
+```shell
+gguf-utils set-meta --help
+```
+
+或
+
+```shell
+# in project dir
 cargo set-meta --help
 ```
 
 ```plaintext
 Set metadata of gguf files
 
-Usage: xtask.exe set-meta [OPTIONS] <FILE> <META_KVS>
+Usage: gguf-utils set-meta [OPTIONS] <FILE> <META_KVS>
 
 Arguments:
   <FILE>      File to set metadata
   <META_KVS>  Meta data to set for the file
 
 Options:
-  -o, --output-dir <OUTPUT_DIR>  Output directory for changed file
-      --log <LOG>                Log level, may be "off", "trace", "debug", "info" or "error"
-  -h, --help                     Print help
+  -o, --output-dir <OUTPUT_DIR>    Output directory for converted files
+  -t, --max-tensors <MAX_TENSORS>  Max count of tensors per shard
+  -s, --max-bytes <MAX_BYTES>      Max size in bytes per shard
+      --no-tensor-first            If set, the first shard will not contain any tensor
+      --no-data                    If set, tensor data will not be written to output files
+      --log <LOG>                  Log level, may be "off", "trace", "debug", "info" or "error"
+  -h, --help                       Print help
 ```
 
 `<META_KVS>` 是具有特定格式的字符串或文本文件路径。工具将先检查文件是否为路径，如果是则从文件读取，否则视作字符串字面量。

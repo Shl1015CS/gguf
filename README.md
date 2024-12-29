@@ -1,7 +1,7 @@
 ﻿# gguf
 
 [![CI](https://github.com/InfiniTensor/gguf/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/InfiniTensor/gguf/actions)
-[![Latest version](https://img.shields.io/crates/v/ggus.svg)](https://crates.io/crates/gguf-utils)
+[![Latest version](https://img.shields.io/crates/v/gguf-utils.svg)](https://crates.io/crates/gguf-utils)
 [![Documentation](https://docs.rs/ggus/badge.svg)](https://docs.rs/gguf-utils)
 [![license](https://img.shields.io/github/license/InfiniTensor/gguf)](https://mit-license.org/)
 

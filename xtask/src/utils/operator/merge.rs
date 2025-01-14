@@ -5,7 +5,8 @@ use memmap2::MmapMut;
 use regex::Regex;
 use std::{borrow::Cow, collections::HashMap, hash::Hash, iter::zip, sync::LazyLock};
 
-const MERGE: &str = r"(attn\.q|attn_q|attn\.k|attn_k|attn\.v|attn_v|ffn_gate|ffn_up|ffn_gate_exps|ffn_up_exps)\.(weight|bias)$";
+const MERGE: &str =
+    r"(attn_q|attn_k|attn_v|ffn_gate|ffn_up|ffn_gate_exps|ffn_up_exps)\.(weight|bias)$";
 const SPLIT: &str = r"(attn_qkv|ffn_gate_up)\.(weight|bias)$";
 const ATTN_QKV: &str = "attn_qkv";
 const ATTN_Q: &str = "attn_q";
@@ -161,9 +162,9 @@ impl<'a> GroupCollector<'a> {
         tensor: Tensor<'a>,
     ) -> Option<(&'static str, Tensor<'a>)> {
         let (layer, i) = match name {
-            ATTN_Q | "attn.q" => (Layer::Attn, 0),
-            ATTN_K | "attn.k" => (Layer::Attn, 1),
-            ATTN_V | "attn.v" => (Layer::Attn, 2),
+            ATTN_Q => (Layer::Attn, 0),
+            ATTN_K => (Layer::Attn, 1),
+            ATTN_V => (Layer::Attn, 2),
             FFN_GATE => (Layer::Ffn, 0),
             FFN_UP => (Layer::Ffn, 1),
             FFN_GATE_EXPS => (Layer::FfnMoe, 0),
@@ -268,9 +269,12 @@ fn distruct(t: &Tensor) -> [u64; 3] {
     }
 }
 
-fn concat<const N: usize>(axis: usize, tensors: [Tensor; N]) -> Tensor {
+fn concat<const N: usize>(mut axis: usize, tensors: [Tensor; N]) -> Tensor {
     let ty = tensors[0].ty;
     let mut shape = tensors[0].shape.clone();
+    if shape.len() == 1 {
+        axis = 0
+    }
 
     for t in &tensors[1..] {
         assert_eq!(t.ty, ty);

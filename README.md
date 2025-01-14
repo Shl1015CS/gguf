@@ -38,7 +38,6 @@ Commands:
   show      Show the contents of gguf files
   split     Split gguf files into shards
   merge     Merge shards into a single gguf file
-  cast      Cast data types in gguf files
   convert   Convert gguf files to different format
   to-llama  Convert gguf files to Llama format
   set-meta  Set metadata of gguf files
@@ -136,38 +135,6 @@ Options:
       --no-data                  If set, tensor data will not be written to output files
       --log <LOG>                Log level, may be "off", "trace", "debug", "info" or "error"
   -h, --help                     Print help
-```
-
-### 转换数据类型
-
-```shell
-gguf-utils cast --help
-```
-
-或
-
-```shell
-# in project dir
-cargo cast --help
-```
-
-```plaintext
-Cast data types in gguf files
-
-Usage: gguf-utils cast [OPTIONS] --types <TYPES> <FILE>
-
-Arguments:
-  <FILE>  File to convert
-
-Options:
-  -x, --types <TYPES>
-  -o, --output-dir <OUTPUT_DIR>    Output directory for converted files
-  -t, --max-tensors <MAX_TENSORS>  Max count of tensors per shard
-  -s, --max-bytes <MAX_BYTES>      Max size in bytes per shard
-      --no-tensor-first            If set, the first shard will not contain any tensor
-      --no-data                    If set, tensor data will not be written to output files
-      --log <LOG>                  Log level, may be "off", "trace", "debug", "info" or "error"
-  -h, --help                       Print help
 ```
 
 ### 转换格式

@@ -1,6 +1,5 @@
 #![deny(warnings)]
 
-mod cast;
 mod convert;
 mod merge;
 mod set_meta;
@@ -19,7 +18,6 @@ fn main() {
         Show(args) => args.show(),
         Split(args) => args.split(),
         Merge(args) => args.merge(),
-        Cast(args) => args.cast(),
         Convert(args) => args.convert(),
         ToLlama(args) => args.convert_to_llama(),
         SetMeta(args) => args.set_meta(),
@@ -42,8 +40,6 @@ enum Commands {
     Split(split::SplitArgs),
     /// Merge shards into a single gguf file
     Merge(merge::MergeArgs),
-    /// Cast data types in gguf files
-    Cast(cast::CastArgs),
     /// Convert gguf files to different format
     Convert(convert::ConvertArgs),
     /// Convert gguf files to Llama format

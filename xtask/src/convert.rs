@@ -40,6 +40,7 @@ impl ConvertArgs {
                 "merge-linear" => Operator::MergeLinear(true),
                 "split-linear" | "!merge-linear" => Operator::MergeLinear(false),
                 op => match op.split_once(':') {
+                    Some(("cast", types)) => Operator::cast(types),
                     Some(("filter-meta", key)) => Operator::filter_meta_key(key),
                     Some(("filter-tensor", name)) => Operator::filter_tensor_name(name),
                     _ => panic!("Unsupported operation: {op}"),

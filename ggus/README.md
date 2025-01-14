@@ -5,6 +5,13 @@
 [![Documentation](https://docs.rs/ggus/badge.svg)](https://docs.rs/ggus)
 [![license](https://img.shields.io/github/license/InfiniTensor/gguf)](https://mit-license.org/)
 
+[![GitHub Issues](https://img.shields.io/github/issues/InfiniTensor/gguf)](https://github.com/InfiniTensor/gguf/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/InfiniTensor/gguf)](https://github.com/InfiniTensor/gguf/pulls)
+![GitHub repo size](https://img.shields.io/github/repo-size/InfiniTensor/gguf)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/InfiniTensor/gguf)
+![GitHub contributors](https://img.shields.io/github/contributors/InfiniTensor/gguf)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/m/InfiniTensor/gguf)
+
 GGUF in Rust🦀.
 
 See the [specification](https://github.com/ggerganov/ggml/blob/master/docs/gguf.md) for details.

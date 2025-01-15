@@ -28,27 +28,25 @@ impl Operator {
 impl Content<'_> {
     pub(super) fn cast(&mut self, types: HashMap<String, Ty>) {
         match self.general_architecture().unwrap() {
-            "llama" | "gpt2" => {
-                let [mat, embd, norm, else_] =
-                    ["mat", "embd", "norm", "else"].map(|name| types.get(name).copied());
-                self.cast_(mat, |name, shape| {
+            "llama" | "gpt2" | "qwen2" => {
+                let [linear, embd, norm, else_] =
+                    ["linear", "embd", "norm", "else"].map(|name| types.get(name).copied());
+                self.cast_(linear, |name, shape| {
                     if matches!(name, "token_embd.weight" | "output.weight") {
                         embd
                     } else if name.ends_with("_norm.weight") || name.ends_with("_norm.bias") {
                         norm
-                    } else if shape.len() > 1
-                        || (name.ends_with(".bias") && !name.ends_with("_norm.bias"))
-                    {
-                        mat
+                    } else if shape.len() > 1 || name.ends_with(".bias") {
+                        linear
                     } else {
                         else_
                     }
                 })
             }
             "clip" => {
-                let [weight, embd, norm, else_] =
-                    ["weight", "embd", "norm", "else"].map(|name| types.get(name).copied());
-                self.cast_(weight, |name, _| {
+                let [linear, embd, norm, else_] =
+                    ["linear", "embd", "norm", "else"].map(|name| types.get(name).copied());
+                self.cast_(linear, |name, _| {
                     name.strip_prefix("v.").map_or(else_, |name| {
                         if name.contains("embd") {
                             embd
@@ -56,7 +54,7 @@ impl Content<'_> {
                             // ln for layer norm
                             norm
                         } else {
-                            weight
+                            linear
                         }
                     })
                 })

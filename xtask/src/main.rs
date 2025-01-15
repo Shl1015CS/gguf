@@ -5,7 +5,6 @@ mod merge;
 mod set_meta;
 mod show;
 mod split;
-mod to_llama;
 mod utils;
 
 #[macro_use]
@@ -19,7 +18,6 @@ fn main() {
         Split(args) => args.split(),
         Merge(args) => args.merge(),
         Convert(args) => args.convert(),
-        ToLlama(args) => args.convert_to_llama(),
         SetMeta(args) => args.set_meta(),
     }
 }
@@ -42,8 +40,6 @@ enum Commands {
     Merge(merge::MergeArgs),
     /// Convert gguf files to different format
     Convert(convert::ConvertArgs),
-    /// Convert gguf files to Llama format
-    ToLlama(to_llama::ToLlamaArgs),
     /// Set metadata of gguf files
     SetMeta(set_meta::SetMetaArgs),
 }

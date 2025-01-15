@@ -11,10 +11,10 @@ use std::{collections::HashMap, fmt};
 
 #[allow(unused)]
 pub(crate) enum Operator {
-    ToLlama(Option<String>),
     FilterMetaKey(Regex),
     FilterTensorName(Regex),
     Cast(HashMap<String, GGmlType>),
+    ToLlama(HashMap<String, String>),
     MergeLinear(bool),
     SetMeta(HashMap<String, (GGufMetaDataValueType, Vec<u8>)>),
     SortTensors,
@@ -23,10 +23,10 @@ pub(crate) enum Operator {
 impl fmt::Display for Operator {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::ToLlama(_extra) => write!(f, "to-llama"),
             Self::FilterMetaKey(regex) => write!(f, "filter-meta: {}", regex.as_str()),
             Self::FilterTensorName(regex) => write!(f, "filter-tensor: {}", regex.as_str()),
-            &Self::Cast { .. } => write!(f, "cast"),
+            Self::Cast(types) => write!(f, "cast:{types:?}"),
+            Self::ToLlama(extra) => write!(f, "to-llama:{extra:?}"),
             &Self::MergeLinear(val) => {
                 if val {
                     write!(f, "merge-linear")

@@ -1,17 +1,30 @@
 ﻿use super::{
     super::{DataPromise, MetaValue, Tensor},
-    Content,
+    Content, Operator,
 };
 use ggus::{
     ggml_quants::{bf16, f16},
-    DataFuture, GGmlType, GGufMetaMapExt,
+    DataFuture, GGmlType, GGufMetaError, GGufMetaMapExt,
 };
 use memmap2::MmapMut;
 use regex::Regex;
-use std::{alloc::Layout, ops::MulAssign, sync::LazyLock};
+use std::{alloc::Layout, collections::HashMap, ops::MulAssign, sync::LazyLock};
+
+impl Operator {
+    #[inline]
+    pub fn to_llama(extra: &str) -> Self {
+        static REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(\w+)=(\w+)").unwrap());
+        Self::ToLlama(
+            REGEX
+                .captures_iter(extra)
+                .map(|captures| (captures[1].into(), captures[2].into()))
+                .collect(),
+        )
+    }
+}
 
 impl Content<'_> {
-    pub(super) fn convert_to_llama(&mut self, extra: Option<String>) {
+    pub(super) fn convert_to_llama(&mut self, extra: HashMap<String, String>) {
         match self.general_architecture() {
             Ok("llama") => {}
             Ok("minicpm") => from_minicpm(self, extra),
@@ -21,18 +34,29 @@ impl Content<'_> {
     }
 }
 
-fn from_minicpm(content: &mut Content, extra: Option<String>) {
+fn from_minicpm(content: &mut Content, extra: HashMap<String, String>) {
     const ERR_MSG: &str =
         "convert from minicpm requires extra args \"embd_scale=<num> res_scale=<num>\"";
+    const EMBD_SCALE: &str = "minicpm.embedding_scale";
+    const RES_SCALE: &str = "minicpm.residual_scale";
+    const LOGIT_SCALE: &str = "minicpm.logit_scale";
 
     let nblk = content.llm_block_count().expect("Missing llm_block_count");
-    let mut embd_scale = None;
-    let mut res_scale = None;
-    for s in extra.expect(ERR_MSG).split_whitespace() {
-        let (k, v) = s.split_once('=').expect(ERR_MSG);
-        match k {
-            "embd_scale" => embd_scale = Some(v.parse::<f64>().expect(ERR_MSG)),
-            "res_scale" => res_scale = Some(v.parse::<f64>().expect(ERR_MSG)),
+    let mut embd_scale = match content.get_f32(EMBD_SCALE) {
+        Ok(v) => Some(v as f64),
+        Err(GGufMetaError::NotExist) => None,
+        Err(e) => panic!("Failed to read {EMBD_SCALE}: {e:?}"),
+    };
+    let mut res_scale = match content.get_f32(RES_SCALE) {
+        Ok(v) => Some(v as f64),
+        Err(GGufMetaError::NotExist) => None,
+        Err(e) => panic!("Failed to read {RES_SCALE}: {e:?}"),
+    };
+
+    for (k, v) in extra {
+        match k.as_str() {
+            "embd_scale" => embd_scale = Some(v.parse().expect(ERR_MSG)),
+            "res_scale" => res_scale = Some(v.parse().expect(ERR_MSG)),
             _ => {}
         }
     }
@@ -52,15 +76,17 @@ fn from_minicpm(content: &mut Content, extra: Option<String>) {
         }
     }
 
-    set_arch(content, "minicpm", "llama")
+    set_arch(content, "minicpm", "llama", |k| {
+        k != EMBD_SCALE && k != RES_SCALE && k != LOGIT_SCALE
+    })
 }
 
-fn set_arch(content: &mut Content, old: &str, new: &str) {
+fn set_arch(content: &mut Content, old: &str, new: &str, mut f: impl FnMut(&str) -> bool) {
     let old = format!("{old}.");
     for (k, v) in std::mem::take(&mut content.meta_kvs) {
         if k == "general.architecture" {
             content.meta_kvs.insert(k, MetaValue::string(new));
-        } else {
+        } else if f(&*k) {
             let k = match k.strip_prefix(&old) {
                 Some(body) => format!("{new}.{body}").into(),
                 None => k,

@@ -34,7 +34,6 @@ Commands:
   split     Split gguf files into shards
   merge     Merge shards into a single gguf file
   convert   Convert gguf files to different format
-  to-llama  Convert gguf files to Llama format
   set-meta  Set metadata of gguf files
   help      Print this message or the help of the given subcommand(s)
 
@@ -155,38 +154,6 @@ Arguments:
 
 Options:
   -x, --steps <STEPS>              Steps to apply, separated by "->", maybe "sort", "merge-linear", "split-linear", "filter-meta:<key>" or "filter-tensor:<name>"
-  -o, --output-dir <OUTPUT_DIR>    Output directory for converted files
-  -t, --max-tensors <MAX_TENSORS>  Max count of tensors per shard
-  -s, --max-bytes <MAX_BYTES>      Max size in bytes per shard
-      --no-tensor-first            If set, the first shard will not contain any tensor
-      --no-data                    If set, tensor data will not be written to output files
-      --log <LOG>                  Log level, may be "off", "trace", "debug", "info" or "error"
-  -h, --help                       Print help
-```
-
-## 转换到标准 llama
-
-```shell
-gguf-utils to-llama --help
-```
-
-或
-
-```shell
-# in project dir
-cargo to-llama --help
-```
-
-```plaintext
-Convert gguf files to Llama format
-
-Usage: gguf-utils to-llama [OPTIONS] <FILE>
-
-Arguments:
-  <FILE>  File to convert
-
-Options:
-  -x, --extra <EXTRA>              Extra metadata for convertion
   -o, --output-dir <OUTPUT_DIR>    Output directory for converted files
   -t, --max-tensors <MAX_TENSORS>  Max count of tensors per shard
   -s, --max-bytes <MAX_BYTES>      Max size in bytes per shard

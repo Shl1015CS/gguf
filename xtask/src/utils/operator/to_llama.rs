@@ -86,7 +86,7 @@ fn set_arch(content: &mut Content, old: &str, new: &str, mut f: impl FnMut(&str)
     for (k, v) in std::mem::take(&mut content.meta_kvs) {
         if k == "general.architecture" {
             content.meta_kvs.insert(k, MetaValue::string(new));
-        } else if f(&*k) {
+        } else if f(&k) {
             let k = match k.strip_prefix(&old) {
                 Some(body) => format!("{new}.{body}").into(),
                 None => k,

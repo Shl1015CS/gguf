@@ -1,5 +1,6 @@
 ﻿mod cast;
 mod merge;
+mod permute_qk;
 mod set_meta;
 mod sort;
 mod to_llama;
@@ -16,8 +17,9 @@ pub(crate) enum Operator {
     Cast(HashMap<String, GGmlType>),
     ToLlama(HashMap<String, String>),
     MergeLinear(bool),
-    SetMeta(HashMap<String, (GGufMetaDataValueType, Vec<u8>)>),
+    PermuteQK,
     SortTensors,
+    SetMeta(HashMap<String, (GGufMetaDataValueType, Vec<u8>)>),
 }
 
 impl fmt::Display for Operator {
@@ -34,10 +36,9 @@ impl fmt::Display for Operator {
                     write!(f, "split-linear")
                 }
             }
-            Self::SetMeta(map) => {
-                write!(f, "set-meta: {} items", map.len())
-            }
+            Self::PermuteQK => write!(f, "permute-qk"),
             Self::SortTensors => write!(f, "sort-tensors"),
+            Self::SetMeta(map) => write!(f, "set-meta: {} items", map.len()),
         }
     }
 }
@@ -63,8 +64,9 @@ impl Content<'_> {
             FilterTensorName(r) => self.tensors.retain(|k, _| r.is_match(k)),
             Cast(types) => self.cast(types),
             MergeLinear(ty) => self.merge_linear(ty),
-            SetMeta(map) => self.set_meta(map),
+            PermuteQK => self.permute_qk(),
             SortTensors => self.sort_tensors(),
+            SetMeta(map) => self.set_meta(map),
         }
     }
 }

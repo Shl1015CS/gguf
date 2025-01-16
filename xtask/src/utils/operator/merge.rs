@@ -1,5 +1,5 @@
 ﻿use super::{super::Tensor, Content, DataPromise};
-use ggus::{DataFuture, GGmlType, GGmlTypeSize};
+use ggus::{DataFuture, GGmlType, GGmlTypeSize, GGufMetaError::NotExist, GGufMetaMapExt};
 use mem_rearrange::{ndarray_layout::ArrayLayout, Rearranging};
 use memmap2::MmapMut;
 use regex::Regex;
@@ -39,6 +39,13 @@ impl Content<'_> {
                 self.tensors.insert(name, tensor);
             }
         } else {
+            let nh = self.llm_attention_head_count().unwrap();
+            let nkvh = match self.llm_attention_head_count_kv() {
+                Ok(val) => val,
+                Err(NotExist) => nh,
+                Err(e) => panic!("{e:?}"),
+            };
+
             for (name, tensor) in tensors {
                 static SPLIT_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(SPLIT).unwrap());
                 if let Some(captures) = SPLIT_REGEX.captures(&name) {
@@ -47,7 +54,7 @@ impl Content<'_> {
                     let key = |name: &str| format!("{pre}{name}.{wb}").into();
                     match name {
                         ATTN_QKV => {
-                            let [q, k, v] = split_qkv(tensor);
+                            let [q, k, v] = split_qkv(tensor, nh, nkvh);
                             self.tensors.insert(key(ATTN_Q), q);
                             self.tensors.insert(key(ATTN_K), k);
                             self.tensors.insert(key(ATTN_V), v);
@@ -218,9 +225,9 @@ fn merge_qkv(tensors: [Option<Tensor>; 3]) -> (&'static str, Tensor) {
     let [Some(q), Some(k), Some(v)] = tensors else {
         unreachable!()
     };
-    let [_, qr, _] = distruct(&q);
-    let [_, kr, _] = distruct(&k);
-    let [_, vr, _] = distruct(&v);
+    let [_, qr] = distruct(&q);
+    let [_, kr] = distruct(&k);
+    let [_, vr] = distruct(&v);
     assert_eq!(qr % kr, 0);
     assert!(qr >= kr);
     assert_eq!(kr, vr);
@@ -242,11 +249,12 @@ fn merge_gate_up_exps(tensors: [Option<Tensor>; 3]) -> (&'static str, Tensor) {
     (FFN_GATE_UP_EXPS, concat(1, [gate, up]))
 }
 
-fn split_qkv(tensor: Tensor) -> [Tensor; 3] {
-    let [c, r, _] = distruct(&tensor);
-    let rq = c;
-    let rkv = (r - c) / 2;
-    split(1, tensor, [rq, rkv, rkv])
+fn split_qkv(tensor: Tensor, nh: usize, nkvh: usize) -> [Tensor; 3] {
+    let nh = nh as u64;
+    let nkvh = nkvh as u64;
+    let [_, r] = distruct(&tensor);
+    let dh = r / (nh + nkvh * 2);
+    split(1, tensor, [nh * dh, nkvh * dh, nkvh * dh])
 }
 
 fn split_gate_up(tensor: Tensor) -> [Tensor; 2] {
@@ -260,11 +268,10 @@ fn split_gate_up_exps(tensor: Tensor) -> [Tensor; 2] {
 }
 
 /// 解构形状，补充维度
-fn distruct(t: &Tensor) -> [u64; 3] {
+fn distruct(t: &Tensor) -> [u64; 2] {
     match *t.shape {
-        [c] => [c, 1, 1],
-        [c, r] => [c, r, 1],
-        [c, r, n] => [c, r, n],
+        [r] => [1, r],
+        [c, r] => [c, r],
         [..] => panic!("invalid tensor shape: {:?}", t.shape),
     }
 }
@@ -320,8 +327,12 @@ fn concat<const N: usize>(mut axis: usize, tensors: [Tensor; N]) -> Tensor {
     Tensor { ty, shape, data }
 }
 
-fn split<const N: usize>(axis: usize, tensor: Tensor, split: [u64; N]) -> [Tensor; N] {
+fn split<const N: usize>(mut axis: usize, tensor: Tensor, split: [u64; N]) -> [Tensor; N] {
     let Tensor { ty, shape, data } = tensor;
+    if shape.len() == 1 {
+        axis = 0
+    }
+
     assert_eq!(shape[axis], split.iter().sum());
 
     let data_layout = layout(ty, &shape);

@@ -37,6 +37,7 @@ impl ConvertArgs {
             name.iter_all().map(|name| dir.join(name.to_string())),
             steps.split("->").map(|op| match op.trim() {
                 "sort" => Operator::SortTensors,
+                "permute-qk" => Operator::PermuteQK,
                 "merge-linear" => Operator::MergeLinear(true),
                 "split-linear" | "!merge-linear" => Operator::MergeLinear(false),
                 "to-llama" => Operator::ToLlama(HashMap::new()),

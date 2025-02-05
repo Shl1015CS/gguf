@@ -153,7 +153,7 @@ Arguments:
   <FILE>  File to convert
 
 Options:
-  -x, --steps <STEPS>              Steps to apply, separated by "->", maybe "sort", "merge-linear", "split-linear", "filter-meta:<key>" or "filter-tensor:<name>"
+  -x, --steps <STEPS>              Steps to apply, separated by "->", maybe "sort", "permute-qk", "merge-linear", "split-linear", "to-llama:<extra>", "cast:<types>", "filter-meta:<key>" or "filter-tensor:<name>"
   -o, --output-dir <OUTPUT_DIR>    Output directory for converted files
   -t, --max-tensors <MAX_TENSORS>  Max count of tensors per shard
   -s, --max-bytes <MAX_BYTES>      Max size in bytes per shard

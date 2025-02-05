@@ -1,4 +1,8 @@
-use super::{super::Tensor, Content, DataPromise};
+use super::{
+    super::Tensor,
+    merge::{merge_qkv, split_qkv},
+    Content, DataPromise,
+};
 use ggus::{DataFuture, GGufMetaError::NotExist, GGufMetaMapExt};
 use mem_rearrange::{ndarray_layout::Endian::LittleEndian, Rearranging};
 use memmap2::MmapMut;
@@ -17,13 +21,18 @@ impl Content<'_> {
         let tensors = std::mem::take(&mut self.tensors);
         for (name, tensor) in tensors {
             static QK_REGEX: LazyLock<Regex> =
-                LazyLock::new(|| Regex::new(r"(attn_q|attn_k)\.(weight|bias)$").unwrap());
+                LazyLock::new(|| Regex::new(r"(attn_q|attn_k|attn_qkv)\.(weight|bias)$").unwrap());
 
             let tensor = if let Some(captures) = QK_REGEX.captures(&name) {
                 match &captures[1] {
                     "attn_q" => permute_qk(tensor, nh),
                     "attn_k" => permute_qk(tensor, nkvh),
-                    "attn_qkv" => todo!(),
+                    "attn_qkv" => {
+                        let [q, k, v] = split_qkv(tensor, nh, nkvh);
+                        let q = permute_qk(q, nh);
+                        let k = permute_qk(k, nkvh);
+                        merge_qkv([Some(q), Some(k), Some(v)]).1
+                    }
                     _ => unreachable!(),
                 }
             } else {

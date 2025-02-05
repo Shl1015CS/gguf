@@ -221,7 +221,7 @@ impl<'a> GroupCollector<'a> {
     }
 }
 
-fn merge_qkv(tensors: [Option<Tensor>; 3]) -> (&'static str, Tensor) {
+pub(crate) fn merge_qkv(tensors: [Option<Tensor>; 3]) -> (&'static str, Tensor) {
     let [Some(q), Some(k), Some(v)] = tensors else {
         unreachable!()
     };
@@ -249,7 +249,7 @@ fn merge_gate_up_exps(tensors: [Option<Tensor>; 3]) -> (&'static str, Tensor) {
     (FFN_GATE_UP_EXPS, concat(1, [gate, up]))
 }
 
-fn split_qkv(tensor: Tensor, nh: usize, nkvh: usize) -> [Tensor; 3] {
+pub(crate) fn split_qkv(tensor: Tensor, nh: usize, nkvh: usize) -> [Tensor; 3] {
     let nh = nh as u64;
     let nkvh = nkvh as u64;
     let [_, r] = distruct(&tensor);

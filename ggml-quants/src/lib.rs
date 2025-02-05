@@ -132,7 +132,7 @@ pub(crate) mod test_utils {
         use std::iter::zip;
 
         let mut data = [0.0f32; N];
-        rand::thread_rng().fill(&mut data[..]);
+        rand::rng().fill(&mut data[..]);
 
         let quant = T::quantize(&data);
         let dequant = T::dequantize(&quant);

@@ -21,4 +21,4 @@ rayon = "1.10"
 half = "2.4"
 
 [dev-dependencies]
-rand = "0.8"
+rand = "0.9"

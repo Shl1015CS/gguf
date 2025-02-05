@@ -10,7 +10,7 @@ use std::{collections::HashMap, path::PathBuf};
 pub struct ConvertArgs {
     /// File to convert
     file: PathBuf,
-    /// Steps to apply, separated by "->", maybe "sort", "merge-linear", "split-linear", "to-llama:<extra>", "cast:<types>", "filter-meta:<key>" or "filter-tensor:<name>"
+    /// Steps to apply, separated by "->", maybe "sort", "permute-qk", "merge-linear", "split-linear", "to-llama:<extra>", "cast:<types>", "filter-meta:<key>" or "filter-tensor:<name>"
     #[clap(long, short = 'x')]
     steps: String,
 

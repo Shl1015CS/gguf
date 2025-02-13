@@ -47,16 +47,23 @@ impl Content<'_> {
                 let [linear, embd, norm, else_] =
                     ["linear", "embd", "norm", "else"].map(|name| types.get(name).copied());
                 self.cast_(linear, |name, _| {
-                    name.strip_prefix("v.").map_or(else_, |name| {
+                    if let Some(name) = name.strip_prefix("v.") {
                         if name.contains("embd") {
                             embd
                         } else if name.contains("ln") {
-                            // ln for layer norm
-                            norm
+                            norm // ln for layer norm
                         } else {
                             linear
                         }
-                    })
+                    } else if let Some(name) = name.strip_prefix("resampler.") {
+                        if name.starts_with("ln_") {
+                            norm // ln for layer norm
+                        } else {
+                            linear
+                        }
+                    } else {
+                        else_
+                    }
                 })
             }
             arch => panic!("Unsupported architecture: {arch}"),

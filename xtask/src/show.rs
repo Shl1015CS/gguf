@@ -1,4 +1,4 @@
-﻿use crate::{utils::compile_patterns, LogArgs};
+use crate::{LogArgs, utils::compile_patterns};
 use ggus::{
     GGufFileHeader, GGufFileName, GGufMetaDataValueType, GGufMetaKV, GGufReadError, GGufReader,
 };

@@ -1,5 +1,4 @@
-﻿use fancy_regex::Regex;
-use std::{fmt, str::FromStr, sync::LazyLock};
+﻿use std::fmt;
 
 #[derive(Clone, Debug)]
 pub struct Version {
@@ -7,18 +6,11 @@ pub struct Version {
     minor: u32,
 }
 
-impl FromStr for Version {
-    type Err = ();
+impl Version {
+    pub const DEFAULT: Self = Self { major: 1, minor: 0 };
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        const PATTERN: &str = r"^v(\d+)\.(\d+)$";
-        static REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(PATTERN).unwrap());
-
-        let captures = REGEX.captures(s).unwrap().unwrap();
-        Ok(Self {
-            major: captures.get(1).unwrap().as_str().parse().unwrap(),
-            minor: captures.get(2).unwrap().as_str().parse().unwrap(),
-        })
+    pub fn new(major: u32, minor: u32) -> Self {
+        Self { major, minor }
     }
 }
 

@@ -1,8 +1,8 @@
-﻿use std::{
+use std::{
     fmt,
     num::ParseIntError,
     path::PathBuf,
-    str::{from_utf8, FromStr},
+    str::{FromStr, from_utf8},
 };
 
 #[derive(Args, Default)]

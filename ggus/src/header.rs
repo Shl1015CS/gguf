@@ -1,5 +1,5 @@
-﻿use crate::{GGufReadError, GGufReader};
-use std::str::{from_utf8, Utf8Error};
+use crate::{GGufReadError, GGufReader};
+use std::str::{Utf8Error, from_utf8};
 
 #[derive(Clone, Default, Debug)]
 #[repr(C)]

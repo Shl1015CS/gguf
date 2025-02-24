@@ -1,5 +1,5 @@
-﻿use super::GGufWriter;
-use crate::{pad, GGmlType, GGufMetaDataValueType, DEFAULT_ALIGNMENT};
+use super::GGufWriter;
+use crate::{DEFAULT_ALIGNMENT, GGmlType, GGufMetaDataValueType, pad};
 use std::io::{Result, Write};
 
 pub struct GGufFileSimulator {

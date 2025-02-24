@@ -1,11 +1,11 @@
-﻿mod cast;
+mod cast;
 mod merge;
 mod permute_qk;
 mod set_meta;
 mod sort;
 mod to_llama;
 
-use super::{compile_patterns, Content, DataPromise};
+use super::{Content, DataPromise, compile_patterns};
 use ggus::{GGmlType, GGufMetaDataValueType};
 use regex::Regex;
 use std::{collections::HashMap, fmt};

@@ -1,5 +1,5 @@
-﻿use super::GGufWriter;
-use crate::{pad, GGmlType, GGufFileHeader, GGufMetaDataValueType, DEFAULT_ALIGNMENT};
+use super::GGufWriter;
+use crate::{DEFAULT_ALIGNMENT, GGmlType, GGufFileHeader, GGufMetaDataValueType, pad};
 use log::trace;
 use std::{
     borrow::Borrow,

@@ -1,4 +1,4 @@
-use super::{bf16, f16, _1};
+use super::{_1, bf16, f16};
 use crate::{DataBlock, Quantize};
 
 use digit_layout::types as ty;

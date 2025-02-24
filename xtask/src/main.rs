@@ -1,6 +1,7 @@
-#![deny(warnings)]
+// #![deny(warnings)]
 
 mod convert;
+mod diff;
 mod merge;
 mod set_meta;
 mod show;
@@ -18,6 +19,7 @@ fn main() {
         Split(args) => args.split(),
         Merge(args) => args.merge(),
         Convert(args) => args.convert(),
+        Diff(args) => args.diff(),
         SetMeta(args) => args.set_meta(),
     }
 }
@@ -40,6 +42,8 @@ enum Commands {
     Merge(merge::MergeArgs),
     /// Convert gguf files to different format
     Convert(convert::ConvertArgs),
+    /// Diff two gguf files
+    Diff(diff::DiffArgs),
     /// Set metadata of gguf files
     SetMeta(set_meta::SetMetaArgs),
 }

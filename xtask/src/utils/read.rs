@@ -1,5 +1,5 @@
-﻿use super::{Content, DataPromise, MetaValue, Tensor};
-use ggus::{GGuf, GGufError, GGufFileName, GENERAL_ALIGNMENT};
+use super::{Content, DataPromise, MetaValue, Tensor};
+use ggus::{GENERAL_ALIGNMENT, GGuf, GGufError, GGufFileName};
 
 impl<'a> Content<'a> {
     pub fn new(

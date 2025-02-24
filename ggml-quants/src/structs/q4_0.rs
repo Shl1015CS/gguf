@@ -1,4 +1,4 @@
-use super::{f16, max_by_abs, _32};
+use super::{_32, f16, max_by_abs};
 use crate::{DataBlock, Quantize};
 use std::array::from_fn;
 

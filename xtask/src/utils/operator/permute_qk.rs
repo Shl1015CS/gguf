@@ -1,10 +1,10 @@
 use super::{
     super::Tensor,
-    merge::{merge_qkv, split_qkv},
     Content, DataPromise,
+    merge::{merge_qkv, split_qkv},
 };
 use ggus::{DataFuture, GGufMetaError::NotExist, GGufMetaMapExt};
-use mem_rearrange::{ndarray_layout::Endian::LittleEndian, Rearranging};
+use mem_rearrange::{Rearranging, ndarray_layout::Endian::LittleEndian};
 use memmap2::MmapMut;
 use regex::Regex;
 use std::sync::LazyLock;

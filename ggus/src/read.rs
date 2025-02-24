@@ -1,7 +1,7 @@
-﻿use crate::metadata::GGufMetaDataValueType;
+use crate::metadata::GGufMetaDataValueType;
 use std::{
     alloc::Layout,
-    str::{from_utf8, from_utf8_unchecked, Utf8Error},
+    str::{Utf8Error, from_utf8, from_utf8_unchecked},
 };
 
 #[derive(Clone)]
@@ -69,7 +69,7 @@ impl<'a> GGufReader<'a> {
         let len = self.read::<u64>().unwrap() as _;
         let (s, tail) = self.0.split_at(len);
         self.0 = tail;
-        from_utf8_unchecked(s)
+        unsafe { from_utf8_unchecked(s) }
     }
 
     pub fn read_arr_header(&mut self) -> Result<(GGufMetaDataValueType, usize), GGufReadError> {

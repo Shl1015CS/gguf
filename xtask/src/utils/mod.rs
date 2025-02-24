@@ -1,4 +1,5 @@
-﻿mod file_info;
+﻿mod diff;
+mod file_info;
 mod name_pattern;
 mod operator;
 mod output;
@@ -19,6 +20,7 @@ use std::{
     time::Instant,
 };
 
+pub(crate) use diff::diff;
 pub(crate) use file_info::show_file_info;
 pub(crate) use name_pattern::compile_patterns;
 pub(crate) use operator::Operator;

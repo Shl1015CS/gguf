@@ -1,6 +1,6 @@
-﻿use super::{super::Tensor, Content, DataPromise};
+use super::{super::Tensor, Content, DataPromise};
 use ggus::{DataFuture, GGmlType, GGmlTypeSize, GGufMetaError::NotExist, GGufMetaMapExt};
-use mem_rearrange::{ndarray_layout::ArrayLayout, Rearranging};
+use mem_rearrange::{Rearranging, ndarray_layout::ArrayLayout};
 use memmap2::MmapMut;
 use regex::Regex;
 use std::{borrow::Cow, collections::HashMap, hash::Hash, iter::zip, sync::LazyLock};
@@ -308,11 +308,7 @@ fn concat<const N: usize>(mut axis: usize, tensors: [Tensor; N]) -> Tensor {
             .iter()
             .map(|t| {
                 let d = t.shape[axis] as usize;
-                if axis == 0 {
-                    d / group
-                } else {
-                    d
-                }
+                if axis == 0 { d / group } else { d }
             })
             .collect::<Vec<_>>();
 

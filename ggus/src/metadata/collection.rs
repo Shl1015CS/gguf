@@ -1,4 +1,4 @@
-﻿use super::{GGufFileType, GGufMetaDataValueType as Ty, GGufMetaValueArray, DEFAULT_ALIGNMENT};
+use super::{DEFAULT_ALIGNMENT, GGufFileType, GGufMetaDataValueType as Ty, GGufMetaValueArray};
 use crate::{GGufReadError, GGufReader};
 
 pub trait GGufMetaMap {

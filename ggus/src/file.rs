@@ -1,6 +1,6 @@
-﻿use crate::{
-    pad, GGufFileHeader, GGufMetaDataValueType, GGufMetaKV, GGufMetaMap, GGufReadError, GGufReader,
-    GGufTensorMeta, DEFAULT_ALIGNMENT, GENERAL_ALIGNMENT,
+use crate::{
+    DEFAULT_ALIGNMENT, GENERAL_ALIGNMENT, GGufFileHeader, GGufMetaDataValueType, GGufMetaKV,
+    GGufMetaMap, GGufReadError, GGufReader, GGufTensorMeta, pad,
 };
 use indexmap::IndexMap;
 use std::{error::Error, fmt};

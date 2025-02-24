@@ -1,4 +1,4 @@
-﻿use super::{max_by_abs, _256};
+use super::{_256, max_by_abs};
 use crate::{DataBlock, Quantize};
 use half::f16;
 use std::iter::zip;

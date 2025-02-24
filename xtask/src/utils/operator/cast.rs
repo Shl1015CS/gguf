@@ -1,7 +1,7 @@
 use super::{Content, DataPromise, Operator};
 use ggus::{
-    ggml_quants::{bf16, f16, QuantExt, Q4_0, Q4_1, Q5_0, Q5_1, Q8_0, Q8_1},
     DataFuture, GGmlType as Ty, GGufMetaMapExt,
+    ggml_quants::{Q4_0, Q4_1, Q5_0, Q5_1, Q8_0, Q8_1, QuantExt, bf16, f16},
 };
 use log::debug;
 use memmap2::MmapMut;

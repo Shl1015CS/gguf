@@ -1,5 +1,4 @@
-﻿use fancy_regex::Regex;
-use std::{fmt, num::NonZero, str::FromStr, sync::LazyLock};
+﻿use std::{fmt, num::NonZero};
 
 #[derive(Clone, Debug)]
 pub struct Shard {
@@ -16,24 +15,22 @@ impl Default for Shard {
     }
 }
 
-impl FromStr for Shard {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        const PATTERN: &str = r"^(\d{5})-of-(\d{5})$";
-        static REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(PATTERN).unwrap());
-
-        let captures = REGEX.captures(s).unwrap().unwrap();
-        Ok(Self {
-            index: captures.get(1).unwrap().as_str().parse().unwrap(),
-            count: captures.get(2).unwrap().as_str().parse().unwrap(),
-        })
+impl Shard {
+    pub fn new(index: u32, count: u32) -> Self {
+        Self {
+            index: NonZero::new(index).unwrap(),
+            count: NonZero::new(count).unwrap(),
+        }
     }
 }
 
 impl fmt::Display for Shard {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let &Self { index, count } = self;
-        write!(f, "{index:05}-of-{count:05}")
+        if count.get() == 1 {
+            Ok(())
+        } else {
+            write!(f, "-{index:05}-of-{count:05}")
+        }
     }
 }

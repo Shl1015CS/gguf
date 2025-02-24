@@ -1,7 +1,7 @@
 [package]
 name = "ggus"
 description = "GGUF in Rust🦀"
-version = "0.4.0"
+version = "0.5.0"
 edition.workspace = true
 authors = ["YdrMaster <ydrml@hotmail.com>"]
 repository = "https://github.com/InfiniTensor/gguf"
@@ -12,10 +12,10 @@ keywords = ["gguf", "ggml", "llama-cpp"]
 categories = ["parsing", "parser-implementations", "encoding"]
 
 [dependencies]
-ggml-quants = { version = "0.0", path = "../ggml-quants" }
+ggml-quants = { version = "0.1", path = "../ggml-quants" }
 indexmap.workspace = true
+regex.workspace = true
 log.workspace = true
-fancy-regex = "0.14"
 num_enum = "0.7"
 
 [features]

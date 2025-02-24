@@ -1,4 +1,4 @@
-﻿use super::{f16, _256};
+use super::{_256, f16};
 use crate::{DataBlock, Quantize};
 
 #[repr(C)]

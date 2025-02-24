@@ -1,4 +1,4 @@
-﻿use super::output::MemSize;
+use super::output::MemSize;
 use std::{cmp::max, path::PathBuf};
 
 pub(crate) struct FileInfo {
@@ -45,12 +45,19 @@ pub(crate) fn show_file_info(file_info: &[FileInfo]) {
         tensors.push(tensors_);
     }
 
-    let line = format!("+-{0:-<max_path_len$}-+-{0:-<max_size_len$}-+-{0:-<max_meta_kvs_len$}-+-{0:-<max_tensors_len$}-+", "");
+    let line = format!(
+        "+-{0:-<max_path_len$}-+-{0:-<max_size_len$}-+-{0:-<max_meta_kvs_len$}-+-{0:-<max_tensors_len$}-+",
+        ""
+    );
     println!("{line}");
-    println!("| {PATH:^max_path_len$} | {SIZE:^max_size_len$} | {META_KVS:^max_meta_kvs_len$} | {TENSORS:^max_tensors_len$} |");
+    println!(
+        "| {PATH:^max_path_len$} | {SIZE:^max_size_len$} | {META_KVS:^max_meta_kvs_len$} | {TENSORS:^max_tensors_len$} |"
+    );
     println!("{line}");
     for (p, s, m, t) in itertools::izip!(path, size, meta_kvs, tensors) {
-        println!("| {p:<max_path_len$} | {s:>max_size_len$} | {m:>max_meta_kvs_len$} | {t:>max_tensors_len$} |");
+        println!(
+            "| {p:<max_path_len$} | {s:>max_size_len$} | {m:>max_meta_kvs_len$} | {t:>max_tensors_len$} |"
+        );
     }
     println!("{line}");
 }

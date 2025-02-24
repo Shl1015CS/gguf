@@ -1,5 +1,5 @@
-﻿use super::{super::MetaValue, Content, Operator};
-use ggus::{GGufMetaDataValueType as Ty, GGufWriter, GENERAL_ALIGNMENT};
+use super::{super::MetaValue, Content, Operator};
+use ggus::{GENERAL_ALIGNMENT, GGufMetaDataValueType as Ty, GGufWriter};
 use internal::StrCollector;
 use log::warn;
 use regex::Regex;
@@ -145,7 +145,7 @@ impl State {
 }
 
 mod internal {
-    use super::{write_val, Ty};
+    use super::{Ty, write_val};
     use std::collections::HashMap;
 
     #[derive(Debug)]

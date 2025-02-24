@@ -1,8 +1,9 @@
 [workspace]
 members = ["ggus", "ggml-quants", "xtask"]
-resolver = "2"
-package.edition = "2021"
+resolver = "3"
+package.edition = "2024"
 
 [workspace.dependencies]
 indexmap = "2.7"
+regex = "1.11"
 log = "0.4"

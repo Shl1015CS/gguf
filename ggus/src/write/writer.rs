@@ -1,4 +1,4 @@
-﻿use crate::{pad, GGmlType, GGufFileHeader, GGufMetaDataValueType, GENERAL_ALIGNMENT};
+use crate::{GENERAL_ALIGNMENT, GGmlType, GGufFileHeader, GGufMetaDataValueType, pad};
 use internal::Internal;
 use std::{
     io::{Result, Write},

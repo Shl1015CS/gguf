@@ -1,4 +1,4 @@
-﻿use super::{DeltaMin, _256};
+use super::{_256, DeltaMin};
 use crate::{DataBlock, Quantize};
 
 #[repr(C)]

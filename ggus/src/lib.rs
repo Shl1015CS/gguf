@@ -14,10 +14,10 @@ mod write;
 pub use file::{GGuf, GGufError};
 pub use header::GGufFileHeader;
 pub use metadata::{
-    GGmlTokenType, GGufFileType, GGufMetaDataValueType, GGufMetaError, GGufMetaKV, GGufMetaMap,
-    GGufMetaMapExt, GGufMetaValueArray, DEFAULT_ALIGNMENT, GENERAL_ALIGNMENT,
+    DEFAULT_ALIGNMENT, GENERAL_ALIGNMENT, GGmlTokenType, GGufFileType, GGufMetaDataValueType,
+    GGufMetaError, GGufMetaKV, GGufMetaMap, GGufMetaMapExt, GGufMetaValueArray,
 };
-pub use name::{GGufFileName, GGufShardParseError};
+pub use name::{GGufExtNotMatch, GGufFileName};
 pub use read::{GGufReadError, GGufReader};
 pub use tensor::{GGmlType, GGmlTypeSize, GGufTensorInfo, GGufTensorMeta};
 pub use write::{

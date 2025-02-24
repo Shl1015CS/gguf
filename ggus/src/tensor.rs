@@ -1,7 +1,7 @@
-﻿use crate::{GGufReadError, GGufReader};
+use crate::{GGufReadError, GGufReader};
 use std::{
-    alloc::{alloc, dealloc, Layout},
-    ptr::{copy_nonoverlapping, NonNull},
+    alloc::{Layout, alloc, dealloc},
+    ptr::{NonNull, copy_nonoverlapping},
     slice::from_raw_parts,
 };
 

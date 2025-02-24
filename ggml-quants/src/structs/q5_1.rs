@@ -1,4 +1,4 @@
-use super::{min_max, DeltaMin, _32};
+use super::{_32, DeltaMin, min_max};
 use crate::{DataBlock, Quantize};
 use std::iter::zip;
 

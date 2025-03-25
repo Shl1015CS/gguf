@@ -3,6 +3,7 @@ use crate::{
     GGufMetaMap, GGufReadError, GGufReader, GGufTensorMeta, pad,
 };
 use indexmap::IndexMap;
+use log::{info, warn};
 use std::{error::Error, fmt};
 
 pub struct GGuf<'a> {
@@ -104,9 +105,20 @@ impl<'a> GGuf<'a> {
         };
         reader.skip::<u8>(padding).map_err(Reading)?;
         let data = reader.remaining();
-        if data.len() != data_len {
-            return Err(Reading(GGufReadError::Eos));
-        }
+        let data = if data.len() == data_len {
+            data
+        } else {
+            let padding = pad(data_len, alignment);
+            if data.len() == data_len + padding {
+                info!("unnecessary padding detected")
+            } else {
+                warn!(
+                    "extra {} bytes detected after tensor data",
+                    data.len() - data_len
+                )
+            }
+            &data[..data_len]
+        };
 
         Ok(Self {
             header,

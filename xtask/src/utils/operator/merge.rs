@@ -329,7 +329,7 @@ fn split<const N: usize>(mut axis: usize, tensor: Tensor, split: [u64; N]) -> [T
         axis = 0
     }
 
-    assert_eq!(shape[axis], split.iter().sum());
+    assert_eq!(shape[axis], split.iter().sum::<u64>());
 
     let data_layout = layout(ty, &shape);
     let block_size = ty.size().block_size as u64;

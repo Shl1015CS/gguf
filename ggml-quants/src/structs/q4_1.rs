@@ -4,8 +4,8 @@ use std::array::from_fn;
 
 #[repr(C)]
 pub struct Q4_1 {
-    delta_min: DeltaMin,
-    quants: [u8; _32 / 2],
+    pub delta_min: DeltaMin,
+    pub quants: [u8; _32 / 2],
 }
 
 impl_data_block! {

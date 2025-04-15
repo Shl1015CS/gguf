@@ -5,9 +5,9 @@ use std::iter::zip;
 
 #[repr(C)]
 pub struct Q8K {
-    delta: f16,
-    quants: [i8; _256],
-    sums: [i16; _256 / 16],
+    pub delta: f16,
+    pub quants: [i8; _256],
+    pub sums: [i16; _256 / 16],
 }
 
 impl_data_block! {

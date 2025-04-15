@@ -6,9 +6,9 @@ use std::iter::zip;
 // TODO: 比 [Q8_0](crate::Q8_0) 多算了一个 sum，不知道有什么用
 #[repr(C, align(4))]
 pub struct Q8_1 {
-    delta: f16,
-    sum: f16,
-    quants: [i8; _32],
+    pub delta: f16,
+    pub sum: f16,
+    pub quants: [i8; _32],
 }
 
 impl_data_block! {

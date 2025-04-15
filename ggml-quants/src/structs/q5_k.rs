@@ -4,11 +4,11 @@ use half::f16;
 
 #[repr(C)]
 pub struct Q5K {
-    delta: f16,
-    min: f16,
-    scales: [u8; 12],
-    qh: [u8; _256 / 8],
-    qs: [u8; _256 / 2],
+    pub delta: f16,
+    pub min: f16,
+    pub scales: [u8; 12],
+    pub qh: [u8; _256 / 8],
+    pub qs: [u8; _256 / 2],
 }
 
 impl_data_block! {

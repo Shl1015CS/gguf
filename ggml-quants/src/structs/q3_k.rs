@@ -3,10 +3,10 @@ use crate::{DataBlock, Quantize};
 
 #[repr(C)]
 pub struct Q3K {
-    hmask: [u8; _256 / 8],
-    qs: [u8; _256 / 4],
-    scales: [u8; 12],
-    delta: f16,
+    pub hmask: [u8; _256 / 8],
+    pub qs: [u8; _256 / 4],
+    pub scales: [u8; 12],
+    pub delta: f16,
 }
 
 impl_data_block! {

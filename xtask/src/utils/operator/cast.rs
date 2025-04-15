@@ -129,6 +129,10 @@ fn cast(row: usize, data: &[u8], from: Ty, to: Ty) -> MmapMut {
             Ty::BF16     => unreachable!(),
             _ => todo!(),
         },
+        Ty::Q8_0 => match to {
+            Ty::F32      => dequantize::<Q8_0, f32, 32>(data),
+            _            => todo!(),
+        },
         _ => cast(row, &cast(row, data, from, Ty::F32), Ty::F32, to),
     }
 }

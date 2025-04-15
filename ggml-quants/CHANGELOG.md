@@ -18,5 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Upgrade Rust to 2024 edition;
 - Upgrade dependency `digit-layout` 0.2 to 0.3;
 - Format every file;
+- Add pub keyword for members of ggml quants types;
 
 [0.1.0]: https://github.com/InfiniTensor/gguf/releases/tag/v0.5.0

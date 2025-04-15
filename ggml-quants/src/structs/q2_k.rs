@@ -3,9 +3,9 @@ use crate::{DataBlock, Quantize};
 
 #[repr(C)]
 pub struct Q2K {
-    scales: [u8; _256 / 16],
-    qs: [u8; _256 / 4],
-    delta_min: DeltaMin,
+    pub scales: [u8; _256 / 16],
+    pub qs: [u8; _256 / 4],
+    pub delta_min: DeltaMin,
 }
 
 impl_data_block! {

@@ -4,9 +4,9 @@ use std::iter::zip;
 
 #[repr(C)]
 pub struct Q5_1 {
-    delta_min: DeltaMin,
-    qh: [u8; _32 / 8],
-    ql: [u8; _32 / 2],
+    pub delta_min: DeltaMin,
+    pub qh: [u8; _32 / 8],
+    pub ql: [u8; _32 / 2],
 }
 
 impl_data_block! {

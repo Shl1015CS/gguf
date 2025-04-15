@@ -52,9 +52,9 @@ pub use q8_k::Q8K;
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug)]
 #[repr(C, align(4))]
-struct DeltaMin {
-    delta: f16,
-    min: f16,
+pub struct DeltaMin {
+    pub delta: f16,
+    pub min: f16,
 }
 
 impl DeltaMin {

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Add subcommand `diff` to diff two gguf files;
+- Add q8 to f32 dequantize cast;
 
 ### Changed
 

@@ -3,11 +3,11 @@ use crate::{DataBlock, Quantize};
 
 #[repr(C)]
 pub struct IQ3S {
-    delta: f16,
-    qs: [u8; _256 / 4],
-    qh: [u8; _256 / 32],
-    signs: [u8; _256 / 8],
-    scales: [u8; _256 / 64],
+    pub delta: f16,
+    pub qs: [u8; _256 / 4],
+    pub qh: [u8; _256 / 32],
+    pub signs: [u8; _256 / 8],
+    pub scales: [u8; _256 / 64],
 }
 
 impl_data_block! {

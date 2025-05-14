@@ -8,6 +8,9 @@ mod show;
 mod split;
 mod utils;
 
+#[cfg(test)]
+mod tests;
+
 #[macro_use]
 extern crate clap;
 use clap::Parser;
